@@ -297,6 +297,94 @@ Mat restoreResolution(Mat& _reduced, Mat& _ori, int times) {
 	return result;
 }
 
+Mat labels(Mat& _img) {
+	Mat res(_img.rows, _img.cols, CV_8UC3);
+	Mat_<cv::Vec3b> img = _img;
+	Mat_<cv::Vec3b> result = res;
+
+	for(int i = 0; i < result.rows; ++i)
+		for(int j = 0; j < result.cols; ++j) {
+			result(i,j) = Vec3b(0,0,0);
+		}
+
+	int L = 1;
+	Vec3b A, B, C, D, X;
+
+	int tab[255];
+	for(int i = 0; i < sizeof(tab)/sizeof(*tab); ++i)
+		tab[i] = 0;
+
+	for(int i = 1; i < img.rows-1; ++i)
+		for(int j = 1; j < img.cols-1; ++j) {
+			A = img(i-1, j-1);
+			B = img(i-1, j);
+			C = img(i-1, j+1);
+			D = img(i, j-1);
+
+			if(img(i,j)[0] + img(i,j)[1] + img(i,j)[2] != 0) {
+				if(A[0]+A[1]+A[2] + B[0]+B[1]+B[2] + C[0]+C[1]+C[2] + D[0]+D[1]+D[2] == 0) {
+					int k = 1;
+					for(k = 50; k < sizeof(tab) && tab[k] != 0; k = k +5);
+					tab[k] = k;
+
+					L+=1;
+					//result(i, j) = Vec3b(L,L,L);
+					result(i, j) = Vec3b(k,k,k);
+				}
+				else {
+					int L1 = 255;
+					int L2 = 0;
+					if(A[0]+A[1]+A[2] > 0) {
+						if(result(i-1, j-1)[0] < L1)
+							L1 = result(i-1, j-1)[0];
+						if(result(i-1, j-1)[0] > L2)
+							L2 = result(i-1, j-1)[0];
+					}
+					if(B[0]+B[1]+B[2] > 0) {
+						if(result(i-1, j)[0] < L1)
+							L1 = result(i-1, j)[0];
+						if(result(i-1, j)[0] > L2)
+							L2 = result(i-1, j)[0];
+					}
+					if(C[0]+C[1]+C[2] > 0) {
+						if(result(i-1, j+1)[0] < L1)
+							L1 = result(i-1, j+1)[0];
+						if(result(i-1, j+1)[0] > L2)
+							L2 = result(i-1, j+1)[0];
+					}
+					if(D[0]+D[1]+D[2] > 0) {
+						if(result(i, j-1)[0] < L1)
+							L1 = result(i, j-1)[0];
+						if(result(i, j-1)[0] > L2)
+							L2 = result(i, j-1)[0];
+					}
+					//result(i, j) = Vec3b(oldL,oldL,oldL);
+					tab[L2] = L1;
+					result(i, j) = Vec3b(L1,L1,L1);
+				}
+			}
+
+
+
+
+		}
+
+	for(int i = 0; i < result.rows; ++i)
+		for(int j = 0; j < result.cols; ++j) {
+			if(result(i,j)[0] + result(i,j)[1] + result(i,j)[2] != 0) {
+				int color = tab[result(i,j)[0]];
+				result(i,j)[0] = color;
+				result(i,j)[1] = color;
+				result(i,j)[2] = color;
+			}
+		}
+	for(int i = 0; i < sizeof(tab)/sizeof(*tab); ++i)
+			std::cout<<i<<"\t"<<tab[i]<<std::endl;
+
+
+	return result;
+}
+
 Mat templateFunction(Mat& _img) {
 	Mat res(_img.rows, _img.cols, CV_8UC3);
 	Mat_<cv::Vec3b> img = _img;

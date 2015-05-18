@@ -41,9 +41,14 @@ int main( int argc, char** argv )
   Mat eroded1 = erode(both1, 3, 2);
   Mat dilated1 = dilate(eroded1, 3, 2);
 
+  Mat final = restoreResolution(dilated1, image, 1);
 
-  show(original, "imegae");
-  show(dilated1, "ori");
+  Mat label = labels(dilated1);
+
+
+
+  show(label, "label");
+  //show(dilated1, "final");
   //show(dilated, "dil");
   //show(eroded, "ero");
 
