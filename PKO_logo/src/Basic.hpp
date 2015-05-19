@@ -8,8 +8,8 @@
 #ifndef SRC_BASIC_HPP_
 #define SRC_BASIC_HPP_
 
-#include <cv.h>
-#include <highgui.h>
+#include "Colors.hpp"
+#include <algorithm>
 
 using namespace cv;
 
@@ -26,8 +26,10 @@ Mat findColorRel(Mat& _img, int thresh, int color) {
 
 	for(int i = 0; i< img.rows; ++i)
 		for(int j = 0; j < img.cols; ++j) {
+
 			if(img(i,j)[color] > img(i,j)[(color+1)%2] + thresh && img(i,j)[color] > img(i,j)[(color+2)%2] + thresh) {
-				result(i,j) = Vec3b(255,255,255);
+				result(i,j) = WHITE;
+
 			}
 		}
 	return result;
@@ -41,7 +43,7 @@ Mat findColor(Mat& _img, int thresh, int color) {
 	for(int i = 0; i< img.rows; ++i)
 		for(int j = 0; j < img.cols; ++j) {
 			if(img(i,j)[color] > thresh) {
-				result(i,j) = Vec3b(255,255,255);
+				result(i,j) = WHITE;
 			}
 		}
 	return result;
@@ -140,7 +142,7 @@ Mat dilate(Mat& _img, int size, int iterations) {
 
 
 					if(white)
-						result(i, j) = Vec3b(255,255,255);
+						result(i, j) = WHITE;
 
 					}
 				}
@@ -183,7 +185,7 @@ Mat erode(Mat& _img, int size, int iterations) {
 
 
 					if(!black)
-						result(i, j) = Vec3b(255,255,255);
+						result(i, j) = WHITE;
 
 
 					}
@@ -207,8 +209,8 @@ Mat merge(Mat& _img1, Mat& _img2) {
 
 	for(int i = 0; i < img1.rows; ++i)
 		for(int j = 0; j < img1.cols; ++j) {
-			if((img1(i,j) == Vec3b(255,255,255)) || (img2(i,j) == Vec3b(255,255,255)))
-				result(i,j) = Vec3b(255,255,255);
+			if((img1(i,j) == WHITE) || (img2(i,j) == WHITE))
+				result(i,j) = WHITE;
 		}
 	return result;
 }
@@ -222,7 +224,7 @@ Mat findWhite(Mat& _img, int thresh, int thresh2) {
 		for(int j = 0; j < img.cols; ++j) {
 			if(img(i,j)[0] > thresh && img(i,j)[1] > thresh && img(i,j)[2] > thresh)
 				if(abs(img(i,j)[0] - img(i,j)[1]) < thresh2 && abs(img(i,j)[0] - img(i,j)[2]) < thresh2)
-					result(i,j) = Vec3b(255,255,255);
+					result(i,j) = WHITE;
 		}
 
 
@@ -287,7 +289,7 @@ Mat restoreResolution(Mat& _reduced, Mat& _ori, int times) {
 
 	for(int i = 0; i < ori.rows; ++i)
 		for(int j = 0; j < ori.cols; ++j) {
-			if(biggerReduced(i/times, j/times) == Vec3b(255,255,255)) {
+			if(biggerReduced(i/times, j/times) == WHITE) {
 				result(i,j) = ori(i,j);
 			}
 		}
@@ -324,7 +326,7 @@ Mat labels(Mat& _img) {
 			if(img(i,j)[0] + img(i,j)[1] + img(i,j)[2] != 0) {
 				if(A[0]+A[1]+A[2] + B[0]+B[1]+B[2] + C[0]+C[1]+C[2] + D[0]+D[1]+D[2] == 0) {
 					int k = 1;
-					for(k = 50; k < sizeof(tab) && tab[k] != 0; k = k +5);
+					for(k = 1; k < sizeof(tab) && tab[k] != 0; k++);
 					tab[k] = k;
 
 					L+=1;
@@ -369,18 +371,130 @@ Mat labels(Mat& _img) {
 
 		}
 
+
+	for(int i = 1; i < sizeof(tab)/sizeof(*tab); ++i) {
+		tab[i] = tab[tab[i]];
+	}
+
+	int licznik = 1;
+	bool zmiana = false;
+
+	for(int j = 1; j < sizeof(tab)/sizeof(*tab); ++j) {
+		zmiana = false;
+		for(int i = 1; i < sizeof(tab)/sizeof(*tab); ++i) {
+			if(tab[i] == j) {
+				tab[i] = licznik;
+				zmiana = true;
+			}
+		}
+		if(zmiana)
+			licznik++;
+	}
+
+
+
 	for(int i = 0; i < result.rows; ++i)
 		for(int j = 0; j < result.cols; ++j) {
 			if(result(i,j)[0] + result(i,j)[1] + result(i,j)[2] != 0) {
-				int color = tab[result(i,j)[0]];
+				/*int color = tab[result(i,j)[0]];
 				result(i,j)[0] = color;
 				result(i,j)[1] = color;
-				result(i,j)[2] = color;
+				result(i,j)[2] = color;*/
+
+				if(tab[result(i,j)[0]] < 16)
+					result(i,j) = COLORS[tab[result(i,j)[0]]];
+				else {
+					int color = tab[result(i,j)[0]];
+					result(i,j)[0] = color;
+					result(i,j)[1] = color;
+					result(i,j)[2] = color;
+				}
+
+
+
 			}
 		}
-	for(int i = 0; i < sizeof(tab)/sizeof(*tab); ++i)
-			std::cout<<i<<"\t"<<tab[i]<<std::endl;
 
+	for(int i = 1; i < sizeof(tab)/sizeof(*tab); ++i) {
+			std::cout<<i<<" "<<tab[i]<<std::endl;
+		}
+	return result;
+}
+
+
+
+Vec3b BGR2HSV (Vec3b bgr) {
+	float R = (float)bgr[2] / 255.0;
+	float G = (float)bgr[1] / 255.0;
+	float B = (float)bgr[0] / 255.0;
+
+	float H, S, V;
+
+	float Cmax, Cmin;
+	if(R > G) {
+		Cmax = R > B ? R : B;
+		Cmin = G < B ? G : B;
+	}
+	else {
+		Cmax = G > B ? G : B;
+		Cmin = R < B ? R : B;
+	}
+	V = Cmax;
+	if(V != 0) {
+		S = (V - Cmin) / V;
+	}
+	else
+		S = 0;
+
+	if(V == R) {
+		H = 60.0 * (G - B) / (V - Cmin);
+	}
+	else if(V == G) {
+		H = 120.0 + 60.0 * (B - R) / (V - Cmin);
+	}
+	else if(B == B) {
+		H = 240.0 + 60.0 * (R - G) / (V - Cmin);
+	}
+
+	if(H < 0)
+		H += 360.0;
+	V = 100.0 * V;
+	S = 100.0 * S;
+	//std::cout<< H << "\t" << S << "\t" << V << std::endl;
+
+	return Vec3b((int)H,(int)S,(int)V);
+}
+
+Mat BGR2HSV(Mat& _img) {
+	Mat res(_img.rows, _img.cols, CV_8UC3);
+	Mat_<cv::Vec3b> img = _img;
+	Mat_<cv::Vec3b> result = res;
+
+	for(int i = 0; i < img.rows; ++i)
+		for(int j = 0; j < img.cols; ++j) {
+			result(i,j) = BGR2HSV(img(i,j));
+
+		}
+
+
+
+	return result;
+}
+
+Mat filterHsv(Mat& _img, int hlow, int hhigh, int slow, int shigh, int vlow, int vhigh) {
+	Mat res(_img.rows, _img.cols, CV_8UC3);
+	Mat_<cv::Vec3b> img = _img;
+	Mat_<cv::Vec3b> result = res;
+
+	for(int i = 0; i < img.rows; ++i)
+		for(int j = 0; j < img.cols; ++j) {
+
+			if(img(i,j)[0] >= hlow && img(i,j)[1] >= slow && img(i,j)[2] >= vlow
+												&& img(i,j)[0] <= hhigh && img(i,j)[1] <= shigh && img(i,j)[2] <= vhigh)
+				result(i,j) = WHITE;
+			//else
+				//std::cout<<img(i,j)<<std::endl;
+		}
 
 	return result;
 }

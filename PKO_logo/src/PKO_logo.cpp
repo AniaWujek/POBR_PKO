@@ -22,7 +22,7 @@ int main( int argc, char** argv )
       return -1;
     }
 
-  Mat reduced = reduceResolution(image, 4);
+  /*Mat reduced = reduceResolution(image, 4);
   Mat median = medianFilter(reduced, 3);
   Mat white = findWhite(median, 90, 100);
   Mat red = findColorRel(median, 10, 2);
@@ -41,16 +41,21 @@ int main( int argc, char** argv )
   Mat eroded1 = erode(both1, 3, 2);
   Mat dilated1 = dilate(eroded1, 3, 2);
 
-  Mat final = restoreResolution(dilated1, image, 1);
+  Mat final = restoreResolution(dilated1, image, 1);*/
 
-  Mat label = labels(dilated1);
+  Mat hsv = BGR2HSV(image);
+
+  Mat filt = filterHsv(hsv, 0,120, 40,100, 0,100);
+
+  //Mat label = labels(dilated1);
 
 
 
-  show(label, "label");
+  show(image, "hsv");
+  show(filt, "filt");
   //show(dilated1, "final");
   //show(dilated, "dil");
-  //show(eroded, "ero");
+  //show(label, "label");
 
 
 
