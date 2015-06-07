@@ -58,11 +58,13 @@ Mat findColorRel(Mat& _img, int thresh, int color) {
 			diff1 = img(i,j)[color]*1.2 - (img(i,j)[(color+1)%2] + thresh);
 			diff2 = img(i,j)[color]*1.2 - (img(i,j)[(color+2)%2] + thresh);
 
-			if( diff1 > 0 && diff2 > 0) {
-				if(img(i,j)[color] < 200 || (img(i,j)[color] > 170  && diff1 > 70 && diff2 > 70))
+			if( diff1 > 0 || diff2 > 0) {
+				if(img(i,j)[color] < 220 || (img(i,j)[color] >= 220  && diff1 > 50 && diff2 > 50))
 					result(i,j) = WHITE;
 
 			}
+			else
+				result(i,j) = BLACK;
 		}
 	return result;
 }
@@ -134,7 +136,7 @@ Vec3b BGR2HSV (Vec3b bgr) {
 		Cmin = R < B ? R : B;
 	}
 	V = Cmax;
-	if(V != 0) {
+	if(V != 0.0) {
 		S = (V - Cmin) / V;
 	}
 	else
@@ -146,14 +148,15 @@ Vec3b BGR2HSV (Vec3b bgr) {
 	else if(V == G) {
 		H = 120.0 + 60.0 * (B - R) / (V - Cmin);
 	}
-	else if(B == B) {
+	else if(V == B) {
 		H = 240.0 + 60.0 * (R - G) / (V - Cmin);
 	}
 
 	if(H < 0)
 		H += 360.0;
-	V = 100.0 * V;
-	S = 100.0 * S;
+	V = 255.0 * V;
+	S = 255.0 * S;
+	H = H / 2.0;
 	//std::cout<< H << "\t" << S << "\t" << V << std::endl;
 
 	return Vec3b((int)H,(int)S,(int)V);
@@ -175,7 +178,7 @@ Mat BGR2HSV(Mat& _img) {
 	return result;
 }
 
-Mat filterHsv(Mat& _img, int hlow1, int hhigh1, int slow, int shigh, int vlow, int vhigh) {
+Mat filterHsv(Mat& _img, int hlow1, int hhigh1, int hlow2, int hhigh2, int slow, int shigh, int vlow, int vhigh) {
 	Mat res(_img.rows, _img.cols, CV_8UC3);
 	Mat_<cv::Vec3b> img = _img;
 	Mat_<cv::Vec3b> result = res;
@@ -183,7 +186,7 @@ Mat filterHsv(Mat& _img, int hlow1, int hhigh1, int slow, int shigh, int vlow, i
 	for(int i = 0; i < img.rows; ++i)
 		for(int j = 0; j < img.cols; ++j) {
 
-			if(img(i,j)[0] >= hlow1 && img(i,j)[0] <= hhigh1 &&
+			if(((img(i,j)[0] >= hlow1 && img(i,j)[0] <= hhigh1) ||  (img(i,j)[0] >= hlow2 && img(i,j)[0] <= hhigh2)) &&
 						img(i,j)[1] >= slow && img(i,j)[2] >= vlow && img(i,j)[1] <= shigh && img(i,j)[2] <= vhigh)
 				result(i,j) = WHITE;
 			//else

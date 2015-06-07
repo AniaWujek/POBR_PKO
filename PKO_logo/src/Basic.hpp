@@ -241,7 +241,7 @@ Mat restoreResolution(Mat& _reduced, Mat& _ori, int times) {
 
 	for(int i = 0; i < ori.rows; ++i)
 		for(int j = 0; j < ori.cols; ++j) {
-			if(reduced(i/times, j/times) == WHITE) {
+			if(reduced(i/times, j/times) == GREEN) {
 				result(i,j) = ori(i,j);
 			}
 		}
@@ -349,63 +349,82 @@ Mat labels(Mat& _img) {
 }
 
 
-Mat retrieveObject(Mat& _img, Vec3b color) {
-	Mat res(_img.rows, _img.cols, CV_8UC3);
+Mat getROI(Mat& _img, Vec3b color) {
+
 	Mat_<cv::Vec3b> img = _img;
-	Mat_<cv::Vec3b> result = res;
+
+
+	int left = img.cols-1;
+	int right = 0;
+	int top = img.rows - 1;
+	int bottom = 0;
 
 	for(int i = 0; i < img.rows; ++i)
 		for(int j = 0; j < img.cols; ++j) {
 			if(img(i,j) == color) {
-				result(i,j) = WHITE;
+				if(i > bottom)
+					bottom = i;
+				if(i < top)
+					top = i;
+				if(j > right)
+					right = j;
+				if(j < left)
+					left = j;
 			}
-			else
-				result(i,j) = BLACK;
 		}
 
-
+	Mat res(bottom - top, right - left, CV_8UC3);
+	Mat_<cv::Vec3b> result = res;
+	int i, ii, j, jj;
+	for(i = 0, ii = top; i < result.rows; ++i, ++ii)
+		for(int j = 0, jj = left; j < result.cols; ++j, ++jj) {
+			result(i,j) = img(ii,jj);
+		}
 
 	return result;
 }
 
 
-int count_S(Mat& _img) {
+
+
+int count_S(Mat& _img, Vec3b color) {
 
 	Mat_<cv::Vec3b> img = _img;
 	int sum = 0;
-	Mat res(_img.rows, _img.cols, CV_8UC3);
 
-	Mat_<cv::Vec3b> result = res;
+
+
 
 	for(int i = 0; i < img.rows; ++i)
 		for(int j = 0; j < img.cols; ++j) {
-			if(img(i,j) == WHITE) {
+			if(img(i,j) == color) {
 				sum++;
-				result(i,j) = WHITE;
+
 			}
 		}
+	//std::cout<<"\tpole: "<<sum<<std::endl;
 	//show(result, "object");
 	return sum;
 }
 
-int count_L(cv::Mat& _I) {
-	cv::Mat res(_I.rows, _I.cols, CV_8UC3);
+int count_L(cv::Mat& _I, Vec3b obiekt) {
+
 	cv::Mat_<cv::Vec3b> I = _I;
-	cv::Mat_<cv::Vec3b> result = res;
+
 
 	int suma = 0;
 
 	cv::Vec3b tlo = cv::Vec3b(0,0,0);
-	cv::Vec3b obiekt = cv::Vec3b(255,255,255);
+
 
 
 	for(int i = 1; i < I.rows - 1; ++i) {
         for(int j = 1; j < I.cols - 1; ++j) {
-            result(i,j) = tlo;
+
             if(I(i,j) == obiekt) {
                 if(I(i-1,j) == tlo || I(i,j-1) == tlo || I(i+1,j) == tlo || I(i,j+1) == tlo) {
                     suma++;
-                    result(i,j) = obiekt;
+
                 }
 
 
@@ -413,79 +432,81 @@ int count_L(cv::Mat& _I) {
 
         }
     }
+	//std::cout<<"\t\tobwod: "<<suma<<std::endl;
+
 	//show(result, "fsedfges");
 	return suma;
 }
 
+double W1(cv::Mat& _I, Vec3b color) {
 
-
-Mat analyzeObjects(Mat& _img) {
-	Mat res(_img.rows, _img.cols, CV_8UC3);
-	Mat_<cv::Vec3b> img = _img;
-	Mat_<cv::Vec3b> result = res;
-
-	Mat_<cv::Vec3b> object;
-
-
-	std::vector<Vec3b> colors;
-
-	for(int i = 0; i < img.rows; ++i)
-		for(int j = 0; j < img.cols; ++j) {
-			if(img(i,j) != BLACK && std::find(colors.begin(), colors.end(), img(i,j)) == colors.end()) {
-				colors.push_back(img(i,j));
-			}
-		}
-	for(int i = 0; i < colors.size(); ++i) {
-		object = retrieveObject(img, colors[i]);
-		std::cout<<"pole: " << count_S(object) << " obwod: " << count_L(object) <<std::endl;
-	}
-
-
-
-
-	return result;
+	double S = (double)count_S(_I, color);
+	return 2 * sqrt(S / 3.14159265359);
 }
 
-Mat removeObject(Mat& _img, Mat& _mask) {
-	Mat res(_img.rows, _img.cols, CV_8UC3);
-	Mat_<cv::Vec3b> img = _img;
-	Mat_<cv::Vec3b> mask = _mask;
-	Mat_<cv::Vec3b> result = res;
+double W3(cv::Mat& _I, Vec3b color) {
+	double S = (double)count_S(_I, color);
+	double L = (double)count_L(_I, color);
 
-	for(int i = 0; i < img.rows; ++i)
-		for(int j = 0; j < img.cols; ++j) {
-			if(mask(i,j) == WHITE)
-				result(i,j) == BLACK;
-			else
-				result(i,j) = img(i,j);
-		}
-	return result;
+	return L / (2 * sqrt(3.14159265359 * S)) - 1;
+
 }
 
-Mat removeSmallObjects(Mat& _img) {
-	Mat res(_img.rows, _img.cols, CV_8UC3);
-	Mat_<cv::Vec3b> img = _img;
-	Mat_<cv::Vec3b> result = img;
+double moment(double p, double q, cv::Mat& _I, Vec3b color) {
 
-	Mat_<cv::Vec3b> object;
+	cv::Mat_<cv::Vec3b> I = _I;
 
+	double m = 0.0;
 
-	std::vector<Vec3b> colors;
-
-	for(int i = 0; i < img.rows; ++i)
-		for(int j = 0; j < img.cols; ++j) {
-			if(img(i,j) != BLACK && std::find(colors.begin(), colors.end(), img(i,j)) == colors.end()) {
-				colors.push_back(img(i,j));
-			}
+	for (int i = 1; i < I.rows; ++i)
+		for (int j = 1; j < I.cols; ++j) {
+		if (I(i, j) == color)
+			m += (pow((double)i, p)) * (pow((double)j, q));
 		}
-	for(int i = 0; i < colors.size(); ++i) {
-		object = retrieveObject(img, colors[i]);
-		if(count_S(object) < 5000) {
-			result = removeObject(result, object);
-		}
-	}
-	return result;
+
+	return m;
+
 }
+
+double MOMENT(int p, int q, cv::Mat& _I, Vec3b color) {
+	double M = 0.0;
+	double val;
+	cv::Mat_<cv::Vec3b> I = _I;
+
+	double ii = moment(1, 0, _I, color) / (double)count_S(_I, color);
+	double jj = moment(0, 1, _I, color) / (double)count_S(_I, color);
+
+	for (int i = 1; i < I.rows; ++i)
+		for (int j = 1; j < I.cols; ++j) {
+		if (I(i, j) == color)
+			M += (pow(i - ii,p)) * (pow(j - jj,q));
+		}
+	return M;
+}
+
+double M3(cv::Mat& _I, Vec3b color) {
+
+	double M30 = MOMENT(3, 0, _I, color);
+	double M12 = MOMENT(1, 2, _I, color);
+	double M21 = MOMENT(2, 1, _I, color);
+	double M03 = MOMENT(0, 3, _I, color);
+	double M00 = (double)count_S(_I, color);
+
+	return (pow(M30 - 3.0 * M12, 2.0) + pow(3.0 * M21 - M03, 2.0)) / pow(M00, (double)5);
+
+}
+
+double M7(cv::Mat& _I, Vec3b color) {
+
+	double M20 = MOMENT(2, 0, _I, color);
+	double M02 = MOMENT(0, 2, _I, color);
+	double M11 = MOMENT(1, 1, _I, color);
+	double M00 = (double)count_S(_I, color);
+
+	return (M20 * M02 - pow(M11, 2)) / pow(M00, 4);
+}
+
+
 
 Mat histogram(Mat& _img) {
 	Mat res(_img.rows, _img.cols, CV_8UC3);
@@ -577,21 +598,48 @@ bool noWhite(Mat& _img) {
 
 }
 
+void floodQ(Mat& _img, int x, int y, Vec3b color) {
+
+	Mat_<cv::Vec3b> img = _img;
+	std::queue<std::pair<int,int> > pozycje;
+	std::pair<int,int> pozycja;
+	pozycje.push(std::pair<int,int>(x,y));
+	while(!pozycje.empty()) {
+
+		pozycja = pozycje.front();
+		pozycje.pop();
+		if(pozycja.first >= 0 && pozycja.second >= 0  && pozycja.first < img.rows && pozycja.second < img.cols
+				&& img(pozycja.first, pozycja.second) == WHITE) {
+			img(pozycja.first, pozycja.second) = color;
+			pozycje.push(std::pair<int,int>(pozycja.first - 1, pozycja.second));
+			pozycje.push(std::pair<int,int>(pozycja.first + 1, pozycja.second));
+			pozycje.push(std::pair<int,int>(pozycja.first, pozycja.second - 1));
+			pozycje.push(std::pair<int,int>(pozycja.first, pozycja.second + 1));
+		}
+	}
+
+	return;
+}
+
 void flood(Mat& _img, int x, int y, Vec3b color) {
 	static int recursion = 0;
 	Mat_<cv::Vec3b> img = _img;
 
 	if(x < 0 || x >= img.rows || y < 0 || y >= img.cols)
 		return;
-	if(img(x,y) != WHITE || recursion > 15000)
+	if(img(x,y) != WHITE || recursion > 10000)
 		return;
 
 
 	img(x,y) = color;
 	flood(img, x - 1, y, color);
+	//flood(img, x - 1, y - 1, color);
 	flood(img, x + 1, y, color);
+	//flood(img, x + 1, y - 1, color);
 	flood(img, x, y - 1, color);
+	//flood(img, x - 1, y + 1, color);
 	flood(img, x, y + 1, color);
+	//flood(img, x + 1, y + 1, color);
 
 	return;
 }
@@ -608,7 +656,7 @@ Mat checkSize(Mat& _img, Vec3b color) {
 			if(img(i,j) == color)
 				suma++;
 		}
-	if(suma < 500) {
+	if(suma < 100) {
 		for(int i = 0; i < img.rows; ++i)
 			for(int j = 0; j < img.cols; ++j) {
 				if(img(i,j) == color)
@@ -622,6 +670,8 @@ Mat checkSize(Mat& _img, Vec3b color) {
 		return img;
 
 }
+
+
 
 Mat changeColors(Mat& _img, Vec3b color1, Vec3b color2) {
 	Mat res(_img.rows, _img.cols, CV_8UC3);
@@ -641,35 +691,64 @@ Mat changeColors(Mat& _img, Vec3b color1, Vec3b color2) {
 	return result;
 }
 
-Mat rozrost(Mat& _img) {
+Mat znajdzKola(Mat& _img) {
 	Mat res(_img.rows, _img.cols, CV_8UC3);
 	Mat_<cv::Vec3b> img = clone(_img);
 	Mat_<cv::Vec3b> result = res;
+	Mat temp;
 
 	int licznik = 0;
+	int znalezione = 0;
 
 	while(!noWhite(img)) {
+
 		for(int i = 0; i < img.rows; ++i)
 			for(int j = 0; j < img.cols; ++j) {
 				if(img(i,j) == WHITE) {
+
 					//std::cout<<"FLOOD " << licznik << std::endl;
-					flood(img, i, j, RED);
-					//checkSize(img, RED);
-					//changeColors(img, BLUE, GREEN);
+					floodQ(img, i, j, RED);
+					//temp = getROI(img, RED);
+					float w3 = W3(img, RED);
+					//std::cout<<w3<<std::endl;
+					if(count_S(img, RED) > 100 && w3 < 0.03 && w3 > -0.15) {
+						img = changeColors(img, RED, GREEN);
+						znalezione++;
+						if(znalezione > 1) {
+							img = changeColors(img, WHITE, BLACK);
+							break;
+						}
+
+					}
+					else
+						img = changeColors(img, RED, BLACK);
+
+					//img = checkSize(img, RED);
+
 					licznik++;
+					//if(licznik > 100) break;
+					if(znalezione > 1) break;
+
 
 
 
 				}
+				//if(licznik > 100) break;
+				if(znalezione > 1) break;
+
 
 
 
 			}
+		//if(licznik > 100) break;
+		if(znalezione > 0) break;
+
 
 
 
 	}
-	std::cout<<licznik;
+	std::cout<<licznik<<std::endl;
+
 
 
 
