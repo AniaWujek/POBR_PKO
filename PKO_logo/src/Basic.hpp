@@ -12,8 +12,12 @@
 #include "ColorProcessor.hpp"
 #include <algorithm>
 #include <queue>
+#include "Element.hpp"
+#include <vector>
 
 using namespace cv;
+
+
 
 void show(Mat& img, const string& name) {
 	namedWindow( name, WINDOW_NORMAL );
@@ -349,7 +353,7 @@ Mat labels(Mat& _img) {
 }
 
 
-Mat getROI(Mat& _img, Vec3b color) {
+Point getCenter(Mat& _img, Vec3b color) {
 
 	Mat_<cv::Vec3b> img = _img;
 
@@ -373,6 +377,34 @@ Mat getROI(Mat& _img, Vec3b color) {
 			}
 		}
 
+	Point result = Point(bottom - top, right - left);
+	return result;
+}
+
+Mat getROI(Mat& _img, Vec3b color) {
+
+	Mat_<cv::Vec3b> img = _img;
+
+
+	int left = img.cols-1;
+	int right = 0;
+	int top = img.rows - 1;
+	int bottom = 0;
+
+	for(int i = 1; i < img.rows-1; ++i)
+		for(int j = 1; j < img.cols-1; ++j) {
+			if(img(i,j) == color) {
+				if(i > bottom)
+					bottom = i+1;
+				if(i < top)
+					top = i-1;
+				if(j > right)
+					right = j+1;
+				if(j < left)
+					left = j-1;
+			}
+		}
+
 	Mat res(bottom - top, right - left, CV_8UC3);
 	Mat_<cv::Vec3b> result = res;
 	int i, ii, j, jj;
@@ -383,8 +415,6 @@ Mat getROI(Mat& _img, Vec3b color) {
 
 	return result;
 }
-
-
 
 
 int count_S(Mat& _img, Vec3b color) {
@@ -673,32 +703,35 @@ Mat checkSize(Mat& _img, Vec3b color) {
 
 
 
-Mat changeColors(Mat& _img, Vec3b color1, Vec3b color2) {
-	Mat res(_img.rows, _img.cols, CV_8UC3);
+void changeColors(Mat& _img, Vec3b color1, Vec3b color2) {
+
 	Mat_<cv::Vec3b> img = _img;
-	Mat_<cv::Vec3b> result = res;
+
 
 	for(int i = 0; i < img.rows; ++i)
 		for(int j = 0; j < img.cols; ++j) {
 			if(img(i,j) == color1)
-				result(i,j) = color2;
-			else
-				result(i,j) = img(i,j);
+				img(i,j) = color2;
+
 		}
 
 
 
-	return result;
+
 }
 
-Mat znajdzKola(Mat& _img) {
+std::vector<Element> znajdzKola(Mat& _img) {
 	Mat res(_img.rows, _img.cols, CV_8UC3);
-	Mat_<cv::Vec3b> img = clone(_img);
+	Mat_<cv::Vec3b> img = _img;
 	Mat_<cv::Vec3b> result = res;
 	Mat temp;
 
 	int licznik = 0;
 	int znalezione = 0;
+
+	std::vector<Element> obiekty;
+	Element ob;
+
 
 	while(!noWhite(img)) {
 
@@ -710,38 +743,43 @@ Mat znajdzKola(Mat& _img) {
 					floodQ(img, i, j, RED);
 					//temp = getROI(img, RED);
 					float w3 = W3(img, RED);
-					//std::cout<<w3<<std::endl;
-					if(count_S(img, RED) > 100 && w3 < 0.03 && w3 > -0.15) {
-						img = changeColors(img, RED, GREEN);
-						znalezione++;
+					float S = count_S(img, RED);
+					std::cout<<w3<<std::endl;
+					if(S > 100 && w3 < 0.03 && w3 > -0.15) {
+						ob.p = getCenter(img, RED);
+						ob.scale = S;
+						ob.type = "K";
+						obiekty.push_back(ob);
+						changeColors(img, RED, GREEN);
+						/*znalezione++;
 						if(znalezione > 1) {
-							img = changeColors(img, WHITE, BLACK);
+							changeColors(img, WHITE, BLACK);
 							break;
-						}
+						}*/
 
 					}
 					else
-						img = changeColors(img, RED, BLACK);
+						changeColors(img, RED, BLACK);
 
 					//img = checkSize(img, RED);
 
 					licznik++;
 					//if(licznik > 100) break;
-					if(znalezione > 1) break;
+					/*if(znalezione > 1) break;*/
 
 
 
 
 				}
 				//if(licznik > 100) break;
-				if(znalezione > 1) break;
+				/*if(znalezione > 1) break;*/
 
 
 
 
 			}
 		//if(licznik > 100) break;
-		if(znalezione > 0) break;
+		/*if(znalezione > 0) break;*/
 
 
 
@@ -751,11 +789,95 @@ Mat znajdzKola(Mat& _img) {
 
 
 
-
-
-
-	return img;
+	return obiekty;
 }
+
+std::vector<Element> znajdzLiteryBiale(Mat& _img) {
+	Mat res(_img.rows, _img.cols, CV_8UC3);
+	Mat_<cv::Vec3b> img = _img;
+	Mat_<cv::Vec3b> result = res;
+	Mat temp;
+
+	int licznik = 0;
+	int znalezione = 0;
+
+	std::vector<Element> obiekty;
+	Element ob;
+
+
+	while(!noWhite(img)) {
+
+		for(int i = 0; i < img.rows; ++i)
+			for(int j = 0; j < img.cols; ++j) {
+				if(img(i,j) == WHITE) {
+
+
+					floodQ(img, i, j, RED);
+					Mat temp = getROI(img, RED);
+					float S = count_S(temp, RED);
+					if(S > 900) {
+						float w1 = W1(temp, RED);
+						float w3 = W3(temp, RED);
+						float m3 = M3(img, RED);
+						float m7 = M7(img, RED);
+
+						std::cout<<"S: "<<S<<std::endl;
+						std::cout<<"w1: "<<w1<<std::endl;
+						std::cout<<"w3: "<<w3<<std::endl;
+						std::cout<<"m3: "<<m3<<std::endl;
+						std::cout<<"m7: "<<m7<<std::endl<<std::endl;
+
+						/*if(S > 100 && w3 < 0.9)*/ {
+							ob.p = getCenter(img, RED);
+							//ob.scale = S;
+							ob.type = "K";
+							obiekty.push_back(ob);
+							changeColors(img, RED, GREEN);
+							/*znalezione++;
+							if(znalezione > 1) {
+								changeColors(img, WHITE, BLACK);
+								break;
+							}*/
+
+						}
+						/**/
+
+						//img = checkSize(img, RED);
+
+						licznik++;
+						//if(licznik > 100) break;
+						/*if(znalezione > 1) break;*/
+					}
+					else
+						changeColors(img, RED, BLACK);
+
+
+
+
+
+
+				}
+				//if(licznik > 100) break;
+				/*if(znalezione > 1) break;*/
+
+
+
+
+			}
+		//if(licznik > 100) break;
+		/*if(znalezione > 0) break;*/
+
+
+
+
+	}
+	std::cout<<licznik<<std::endl;
+
+
+
+	return obiekty;
+}
+
 
 Mat open(Mat& _img, int iterations) {
 
@@ -778,6 +900,8 @@ Mat close(Mat& _img, int iterations) {
 
 	return clone(img);
 }
+
+
 
 Mat templateFunction(Mat& _img) {
 	Mat res(_img.rows, _img.cols, CV_8UC3);

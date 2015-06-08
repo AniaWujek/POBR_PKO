@@ -69,6 +69,32 @@ Mat findColorRel(Mat& _img, int thresh, int color) {
 	return result;
 }
 
+Mat findColorRel2(Mat& _img, int thresh, int color) {
+	Mat res(_img.rows, _img.cols, CV_8UC3);
+	Mat_<cv::Vec3b> img = _img;
+	Mat_<cv::Vec3b> result = res;
+
+	float diff1, diff2;
+
+
+
+	for(int i = 0; i< img.rows; ++i)
+		for(int j = 0; j < img.cols; ++j) {
+
+			diff1 = img(i,j)[color]*1.2 - (img(i,j)[(color+1)%2] + thresh);
+			diff2 = img(i,j)[color]*1.2 - (img(i,j)[(color+2)%2] + thresh);
+
+			if( diff1 > 0 && diff2 > 0) {
+				if(img(i,j)[color] < 150 || (img(i,j)[color] >= 150  && diff1 > 20 && diff2 > 20))
+					result(i,j) = WHITE;
+
+			}
+			else
+				result(i,j) = BLACK;
+		}
+	return result;
+}
+
 Mat findColor(Mat& _img, int thresh, int color) {
 	Mat res(_img.rows, _img.cols, CV_8UC3);
 	Mat_<cv::Vec3b> img = _img;
@@ -97,20 +123,22 @@ Mat adjustRed(Mat& _img) {
 	return result;
 }
 
-Mat findWhite(Mat& _img, int thresh2) {
+Mat findWhite(Mat& _img, int thresh1, int thresh2) {
 	Mat res(_img.rows, _img.cols, CV_8UC3);
 	Mat_<cv::Vec3b> img = _img;
 	Mat_<cv::Vec3b> result = res;
 
 
-	Mat temp = BGR2GRAY(img);
+	//Mat temp = BGR2GRAY(img);
 
-	Mat_<cv::Vec3b> temp2 = adjustContrast(temp, 2.3);
+	//Mat_<cv::Vec3b> temp2 = adjustContrast(temp, 2.3);
 	//result = temp2;
 
-	for(int i = 0; i < temp2.rows; ++i)
-		for(int j = 0; j < temp2.cols; ++j) {
-			if(temp2(i,j)[0] > thresh2 && temp2(i,j)[1] > thresh2 && temp2(i,j)[2] > thresh2)
+	for(int i = 0; i < img.rows; ++i)
+		for(int j = 0; j < img.cols; ++j) {
+			if(img(i,j)[0] > thresh2 && img(i,j)[1] > thresh2 && img(i,j)[2] > thresh2
+					&& (abs(img(i,j)[0] - img(i,j)[1]) < thresh1 && abs(img(i,j)[1] - img(i,j)[2]) < thresh1)
+						&& abs(img(i,j)[1] - img(i,j)[2]) < thresh1)
 				result(i,j) = WHITE;
 		}
 

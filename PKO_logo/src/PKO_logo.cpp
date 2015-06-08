@@ -49,7 +49,7 @@ int main( int argc, char** argv )
 
   //Mat reduced = reduceResolution(image, 4);
 
-  image = imread( "images/w2.jpg" );
+  image = imread( "images/t4.jpg" );
 
 
     if( !image.data )
@@ -61,7 +61,7 @@ int main( int argc, char** argv )
 
 
     /*
-    ZNAJDOWANIE KOLEK DOBRE*/
+    ZNAJDOWANIE KOLEK DOBRE
     Mat reduced = reduceResolution(image, 2);
     Mat red = findColorRel(image, 35, 2);
     Mat hsv = BGR2HSV(image);
@@ -70,15 +70,27 @@ int main( int argc, char** argv )
     Mat and_red = AND_image(filt, red);
     Mat op = open(and_red, 1);
     Mat cl = close(op, 1);
-    Mat roz = znajdzKola(cl);
+    std::vector<Element> obiekty = znajdzKola(cl);
+    for(int i = 0; i < obiekty.size(); ++i) {
+    	std::cout<<obiekty[i].type << std::endl;
+    }
     //Mat final = restoreResolution(roz, image, 1);
 
-    /**/
+    */
+    Mat contrast = adjustContrast(image, 2.0);
+    Mat white = findWhite(contrast, 40, 180);
+    Mat hsv = BGR2HSV(contrast);
+    Mat filt = filterHsv(hsv, 80,135, 0,0,0,75, 70,255);
+    Mat and_white = AND_image(filt, white);
+    Mat op = open(and_white, 1);
+    Mat cl = close(op, 1);
+    znajdzLiteryBiale(cl);
+
 
 
   //show(opencvHsv, "opencvHsv");
   show(image, "image");
-  show(roz, "roz");
+  show(white, "white");
   show(cl, "cl");
   //show(final, "final");
   //show(dilated1, "dilate");
