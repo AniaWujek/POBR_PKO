@@ -748,7 +748,7 @@ std::vector<Element> znajdzKola(Mat& _img) {
 					if(S > 100 && w3 < 0.03 && w3 > -0.15) {
 						ob.p = getCenter(img, RED);
 						ob.scale = S;
-						ob.type = "K";
+						ob.type = "KOLO";
 						obiekty.push_back(ob);
 						changeColors(img, RED, GREEN);
 						/*znalezione++;
@@ -802,7 +802,7 @@ std::vector<Element> znajdzLiteryBiale(Mat& _img) {
 	int znalezione = 0;
 
 	std::vector<Element> obiekty;
-	Element ob;
+
 
 
 	while(!noWhite(img)) {
@@ -820,6 +820,7 @@ std::vector<Element> znajdzLiteryBiale(Mat& _img) {
 						float w3 = W3(temp, RED);
 						float m3 = M3(img, RED);
 						float m7 = M7(img, RED);
+						Element ob;
 
 						std::cout<<"S: "<<S<<std::endl;
 						std::cout<<"w1: "<<w1<<std::endl;
@@ -827,54 +828,47 @@ std::vector<Element> znajdzLiteryBiale(Mat& _img) {
 						std::cout<<"m3: "<<m3<<std::endl;
 						std::cout<<"m7: "<<m7<<std::endl<<std::endl;
 
-						/*if(S > 100 && w3 < 0.9)*/ {
+						if(m3 < 0.00006 && m3 > 0.0 && w3 > 0.25 && w3 < 1.1 && m7 > 0.008 && m7 < 0.015) {
 							ob.p = getCenter(img, RED);
-							//ob.scale = S;
+							ob.scale = S;
 							ob.type = "K";
 							obiekty.push_back(ob);
 							changeColors(img, RED, GREEN);
-							/*znalezione++;
-							if(znalezione > 1) {
-								changeColors(img, WHITE, BLACK);
-								break;
-							}*/
+
 
 						}
-						/**/
+						else if(m7 > 0.015 && m7 < 0.030 && m3 > 0.015 && m3 < 0.03 && w3 > 0.6 && m3 < 1.2) {
+							ob.p = getCenter(img, RED);
+							ob.scale = S;
+							ob.type = "P";
+							obiekty.push_back(ob);
+							changeColors(img, RED, GREEN);
+						}
+						else if(m3 > 0.00006 && m3 < 0.0003 && w3 > 0.1 && w3 < 1.0 && m7 > 0.005 && m7 < 0.015) {
+							ob.p = getCenter(img, RED);
+							ob.scale = S;
+							ob.type = "O";
+							obiekty.push_back(ob);
+							changeColors(img, RED, GREEN);
 
-						//img = checkSize(img, RED);
+						}
+						else
+							changeColors(img, RED, BLACK);
+
 
 						licznik++;
 						//if(licznik > 100) break;
-						/*if(znalezione > 1) break;*/
+
 					}
 					else
 						changeColors(img, RED, BLACK);
-
-
-
-
-
-
 				}
 				//if(licznik > 100) break;
-				/*if(znalezione > 1) break;*/
-
-
-
-
 			}
 		//if(licznik > 100) break;
-		/*if(znalezione > 0) break;*/
-
-
-
 
 	}
 	std::cout<<licznik<<std::endl;
-
-
-
 	return obiekty;
 }
 
@@ -900,6 +894,7 @@ Mat close(Mat& _img, int iterations) {
 
 	return clone(img);
 }
+
 
 
 

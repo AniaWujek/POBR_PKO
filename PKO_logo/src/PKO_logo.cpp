@@ -49,7 +49,7 @@ int main( int argc, char** argv )
 
   //Mat reduced = reduceResolution(image, 4);
 
-  image = imread( "images/t4.jpg" );
+  image = imread( "images/t17.jpg" );
 
 
     if( !image.data )
@@ -77,20 +77,25 @@ int main( int argc, char** argv )
     //Mat final = restoreResolution(roz, image, 1);
 
     */
-    Mat contrast = adjustContrast(image, 2.0);
+    Mat median = medianFilter(image, 3);
+    Mat contrast = adjustContrast(median, 2.0);
     Mat white = findWhite(contrast, 40, 180);
     Mat hsv = BGR2HSV(contrast);
     Mat filt = filterHsv(hsv, 80,135, 0,0,0,75, 70,255);
     Mat and_white = AND_image(filt, white);
     Mat op = open(and_white, 1);
     Mat cl = close(op, 1);
-    znajdzLiteryBiale(cl);
+    Mat cll = clone(cl);
+    std::vector<Element> obiekty = znajdzLiteryBiale(cl);
+    for(int i = 0; i < obiekty.size(); ++i) {
+        	std::cout<<obiekty[i].type << std::endl;
+        }
 
 
 
   //show(opencvHsv, "opencvHsv");
   show(image, "image");
-  show(white, "white");
+  show(cll, "cll");
   show(cl, "cl");
   //show(final, "final");
   //show(dilated1, "dilate");
