@@ -16,7 +16,9 @@ public:
 	Point p;
 	float scale;
 	std::string type;
-	Element(){};
+	Element(){
+		scale = 1.0;
+	};
 	virtual ~Element(){};
 };
 

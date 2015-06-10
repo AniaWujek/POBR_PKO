@@ -101,7 +101,7 @@ Mat dilate(Mat& _img, int size, int iterations) {
 	bool white;
 
 	for(int iter = 0; iter < iterations; ++iter) {
-		std::cout<<"iteracja: "<<iter<<std::endl;
+		//std::cout<<"iteracja: "<<iter<<std::endl;
 		for (int i = size / 2; i < img.rows - size / 2; ++i){
 				for (int j = size / 2; j < img.cols - size / 2; ++j) {
 					white = false;
@@ -145,7 +145,7 @@ Mat erode(Mat& _img, int size, int iterations) {
 	bool black;
 
 	for(int iter = 0; iter < iterations; ++iter) {
-		std::cout<<"iteracja: "<<iter<<std::endl;
+		//std::cout<<"iteracja: "<<iter<<std::endl;
 		for (int i = size / 2; i < img.rows - size / 2; ++i){
 				for (int j = size / 2; j < img.cols - size / 2; ++j) {
 					black = false;
@@ -210,6 +210,21 @@ Mat AND_image(Mat& _img1, Mat& _img2) {
 	return result;
 }
 
+Mat NOT_image(Mat& _img) {
+	Mat res(_img.rows, _img.cols, CV_8UC3);
+	Mat_<cv::Vec3b> img = _img;
+	Mat_<cv::Vec3b> result = res;
+
+	for(int i = 0; i < img.rows; ++i)
+		for(int j = 0; j < img.cols; ++j) {
+			if(img(i,j) == WHITE)
+				result(i,j) = BLACK;
+			else
+				result(i,j) = WHITE;
+		}
+	return result;
+}
+
 
 
 Mat reduceResolution(Mat& _img, int times) {
@@ -255,102 +270,7 @@ Mat restoreResolution(Mat& _reduced, Mat& _ori, int times) {
 	return result;
 }
 
-Mat labels(Mat& _img) {
-	Mat res(_img.rows, _img.cols, CV_8UC3);
-	Mat_<cv::Vec3b> img = _img;
-	Mat_<cv::Vec3b> result = res;
 
-	for(int i = 0; i < result.rows; ++i)
-		for(int j = 0; j < result.cols; ++j) {
-			result(i,j) = Vec3b(0,0,0);
-		}
-
-	int L = 1;
-	Vec3b A, B, C, D, X;
-
-	int tab[254];
-	for(int i = 0; i < sizeof(tab)/sizeof(*tab); ++i)
-		tab[i] = 0;
-
-	for(int i = 1; i < img.rows-1; ++i)
-		for(int j = 1; j < img.cols-1; ++j) {
-			if(img(i,j) == WHITE) {
-				A = img(i-1, j-1);
-				B = img(i-1, j);
-				C = img(i-1, j+1);
-				D = img(i, j-1);
-
-				if((img(i,j)[0] + img(i,j)[1] + img(i,j)[2] != 0) && result(i,j) == BLACK) {
-					if(A[0]+A[1]+A[2] + B[0]+B[1]+B[2] + C[0]+C[1]+C[2] + D[0]+D[1]+D[2] == 0) {
-						int k;
-						for(k = 1; k < sizeof(tab)/sizeof(*tab) && tab[k] != 0; k++);
-						if(k < sizeof(tab)/sizeof(*tab)) {
-							tab[k] = k;
-
-
-							result(i, j) = Vec3b(k,k,k);
-						}
-						else
-							result(i,j) = BLACK;
-
-					}
-					else {
-						int L1 = 255;
-						int L2 = 1;
-						if(A[0]+A[1]+A[2] > 0) {
-							if(result(i-1, j-1)[0] < L1)
-								L1 = result(i-1, j-1)[0];
-							if(result(i-1, j-1)[0] > L2)
-								L2 = result(i-1, j-1)[0];
-						}
-						if(B[0]+B[1]+B[2] > 0) {
-							if(result(i-1, j)[0] < L1)
-								L1 = result(i-1, j)[0];
-							if(result(i-1, j)[0] > L2)
-								L2 = result(i-1, j)[0];
-						}
-						if(C[0]+C[1]+C[2] > 0) {
-							if(result(i-1, j+1)[0] < L1)
-								L1 = result(i-1, j+1)[0];
-							if(result(i-1, j+1)[0] > L2)
-								L2 = result(i-1, j+1)[0];
-						}
-						if(D[0]+D[1]+D[2] > 0) {
-							if(result(i, j-1)[0] < L1)
-								L1 = result(i, j-1)[0];
-							if(result(i, j-1)[0] > L2)
-								L2 = result(i, j-1)[0];
-						}
-
-						tab[L2] = L1;
-						result(i, j) = Vec3b(L1,L1,L1);
-					}
-				}
-			}
-
-		}
-
-	for(int i = 0; i < sizeof(tab)/sizeof(*tab); ++i) {
-		tab[i] = tab[tab[i]];
-		std::cout<<i<<" "<<tab[i]<<std::endl;
-	}
-
-
-	for(int i = 0; i < result.rows; ++i)
-		for(int j = 0; j < result.cols; ++j) {
-			if(result(i,j)[0] + result(i,j)[1] + result(i,j)[2] != 0) {
-
-
-					int color = tab[result(i,j)[0]];
-					result(i,j)[0] = color;
-					result(i,j)[1] = color;
-					result(i,j)[2] = color;
-			}
-		}
-
-
-	return result;
-}
 
 
 Point getCenter(Mat& _img, Vec3b color) {
@@ -409,7 +329,7 @@ Mat getROI(Mat& _img, Vec3b color) {
 	Mat_<cv::Vec3b> result = res;
 	int i, ii, j, jj;
 	for(i = 0, ii = top; i < result.rows; ++i, ++ii)
-		for(int j = 0, jj = left; j < result.cols; ++j, ++jj) {
+		for(j = 0, jj = left; j < result.cols; ++j, ++jj) {
 			result(i,j) = img(ii,jj);
 		}
 
@@ -500,7 +420,6 @@ double moment(double p, double q, cv::Mat& _I, Vec3b color) {
 
 double MOMENT(int p, int q, cv::Mat& _I, Vec3b color) {
 	double M = 0.0;
-	double val;
 	cv::Mat_<cv::Vec3b> I = _I;
 
 	double ii = moment(1, 0, _I, color) / (double)count_S(_I, color);
@@ -538,81 +457,6 @@ double M7(cv::Mat& _I, Vec3b color) {
 
 
 
-Mat histogram(Mat& _img) {
-	Mat res(_img.rows, _img.cols, CV_8UC3);
-	Mat_<cv::Vec3b> img = _img;
-	Mat_<cv::Vec3b> result = res;
-
-	float pR[256];
-	float pG[256];
-	float pB[256];
-	for(int i = 0; i < 256; ++i) {
-		pR[i] = 0;
-		pG[i] = 0;
-		pB[i] = 0;
-
-	}
-
-	for(int i = 0; i < img.rows; ++i)
-		for(int j = 0; j < img.cols; ++j) {
-			pB[img(i,j)[0]]++;
-			pG[img(i,j)[1]]++;
-			pR[img(i,j)[2]]++;
-
-		}
-	for(int i = 255; i >= 0; --i) {
-		for(int j = 0; j < i; ++j) {
-			pB[i] += pB[j];
-			pG[i] += pG[j];
-			pR[i] += pR[j];
-		}
-	}
-
-	int N = img.cols * img.rows;
-	for(int i = 0; i < 256; ++i) {
-			pR[i] /= N;
-			pG[i] /= N;
-			pB[i] /= N;
-
-		}
-	float D0R = 0;
-	float D0G = 0;
-	float D0B = 0;
-	for(int i = 0; i < 256; ++i) {
-		std::cout<<pR[i]<<" "<<pG[i]<<" "<<pB[i]<<std::endl;
-	}
-
-	int licznik = 0;
-	while(pR[licznik] == 0){
-		licznik++;
-	}
-	D0R = pR[licznik];
-	licznik = 0;
-	while(pG[licznik] == 0) {
-		licznik++;
-	}
-	D0G = pG[licznik];
-	licznik = 0;
-	while(pB[licznik] == 0) {
-		licznik++;
-	}
-	D0B = pB[licznik];
-
-	for(int i = 0; i < img.rows; ++i)
-		for(int j = 0; j < img.cols; ++j) {
-			Vec3b color = img(i,j);
-			result(i,j)[0] = ((float)pB[color[0]] - D0B) / (1.0 - D0B) * 255.0;
-			result(i,j)[1] = ((float)pG[color[1]] - D0G) / (1.0 - D0G) * 255.0;
-			//result(i,j)[2] = ((float)pR[color[2]] - D0R) / (1.0 - D0R) * 255.0;
-			//result(i,j)[0] = color[0];
-			result(i,j)[2] = color[2];
-		}
-
-
-
-
-	return result;
-}
 
 bool noWhite(Mat& _img) {
 	Mat res(_img.rows, _img.cols, CV_8UC3);
@@ -727,7 +571,7 @@ std::vector<Element> znajdzKola(Mat& _img) {
 	Mat temp;
 
 	int licznik = 0;
-	int znalezione = 0;
+	//int znalezione = 0;
 
 	std::vector<Element> obiekty;
 	Element ob;
@@ -744,7 +588,7 @@ std::vector<Element> znajdzKola(Mat& _img) {
 					//temp = getROI(img, RED);
 					float w3 = W3(img, RED);
 					float S = count_S(img, RED);
-					std::cout<<w3<<std::endl;
+					//std::cout<<w3<<std::endl;
 					if(S > 100 && w3 < 0.03 && w3 > -0.15) {
 						ob.p = getCenter(img, RED);
 						ob.scale = S;
@@ -785,7 +629,7 @@ std::vector<Element> znajdzKola(Mat& _img) {
 
 
 	}
-	std::cout<<licznik<<std::endl;
+	//std::cout<<licznik<<std::endl;
 
 
 
@@ -799,7 +643,7 @@ std::vector<Element> znajdzLiteryBiale(Mat& _img) {
 	Mat temp;
 
 	int licznik = 0;
-	int znalezione = 0;
+	//int znalezione = 0;
 
 	std::vector<Element> obiekty;
 
@@ -815,41 +659,46 @@ std::vector<Element> znajdzLiteryBiale(Mat& _img) {
 					floodQ(img, i, j, RED);
 					Mat temp = getROI(img, RED);
 					float S = count_S(temp, RED);
-					if(S > 900) {
-						float w1 = W1(temp, RED);
+					if(S > 900 && S < 50000) {
+
 						float w3 = W3(temp, RED);
 						float m3 = M3(img, RED);
 						float m7 = M7(img, RED);
 						Element ob;
 
+
 						std::cout<<"S: "<<S<<std::endl;
-						std::cout<<"w1: "<<w1<<std::endl;
+
 						std::cout<<"w3: "<<w3<<std::endl;
 						std::cout<<"m3: "<<m3<<std::endl;
 						std::cout<<"m7: "<<m7<<std::endl<<std::endl;
 
-						if(m3 < 0.00006 && m3 > 0.0 && w3 > 0.25 && w3 < 1.1 && m7 > 0.008 && m7 < 0.015) {
-							ob.p = getCenter(img, RED);
-							ob.scale = S;
-							ob.type = "K";
-							obiekty.push_back(ob);
-							changeColors(img, RED, GREEN);
 
-
-						}
-						else if(m7 > 0.015 && m7 < 0.030 && m3 > 0.015 && m3 < 0.03 && w3 > 0.6 && m3 < 1.2) {
+						if(w3 > 0.57 && w3 < 1.0 && m3 > 0.017 && m3 < 0.039 && m7 > 0.018 && m7 < 0.025) {
 							ob.p = getCenter(img, RED);
 							ob.scale = S;
 							ob.type = "P";
 							obiekty.push_back(ob);
-							changeColors(img, RED, GREEN);
+							changeColors(img, RED, BLUE);
+
 						}
-						else if(m3 > 0.00006 && m3 < 0.0003 && w3 > 0.1 && w3 < 1.0 && m7 > 0.005 && m7 < 0.015) {
+						else if(w3 > 0.12 && w3 < 1.13 && m3 > 0.0000089 && m3 < 0.000086 && m7 > 0.009 && m7 < 0.014) {
+							ob.p = getCenter(img, RED);
+							ob.scale = S;
+							ob.type = "K";
+							obiekty.push_back(ob);
+							changeColors(img, RED, MAGENTA);
+
+
+						}
+						else if(w3 > 0.15 && w3 < 0.84 && m3 > 0.000084 && m3 < 0.00042 && m7 > 0.0091 && m7 < 0.013) {
 							ob.p = getCenter(img, RED);
 							ob.scale = S;
 							ob.type = "O";
 							obiekty.push_back(ob);
-							changeColors(img, RED, GREEN);
+							changeColors(img, RED, YELLOW);
+
+
 
 						}
 						else
@@ -868,7 +717,7 @@ std::vector<Element> znajdzLiteryBiale(Mat& _img) {
 		//if(licznik > 100) break;
 
 	}
-	std::cout<<licznik<<std::endl;
+	//std::cout<<licznik<<std::endl;
 	return obiekty;
 }
 
@@ -896,7 +745,60 @@ Mat close(Mat& _img, int iterations) {
 }
 
 
+int avgWhite(Mat& _img) {
 
+	Mat_<cv::Vec3b> img = _img;
+	float avg = 0;
+
+	for(int i = 0; i < img.rows; ++i)
+		for(int j = 0; j < img.cols; ++j) {
+			avg += (float)(img(i,j)[0] + img(i,j)[1] + img(i,j)[2]) / (float)(3 * img.rows * img.cols);
+		}
+
+	//avg /= img.rows * img.cols;
+
+
+
+	return (int)avg;
+}
+
+Mat andFinal(Mat& _img1, Mat& _img2) {
+	Mat res(_img1.rows, _img1.cols, CV_8UC3);
+	Mat_<cv::Vec3b> img1 = _img1;
+	Mat_<cv::Vec3b> img2 = _img2;
+	Mat_<cv::Vec3b> result = res;
+
+	for(int i = 0; i < img1.rows; ++i)
+		for(int j = 0; j < img1.cols; ++j) {
+			if(img1(i,j) != BLACK)
+				result(i,j) = img1(i,j);
+			else
+				result(i,j) = img2(i,j);
+		}
+
+
+
+	return result;
+}
+
+Mat mask(Mat& _img, Mat& _mask) {
+	Mat res(_img.rows, _img.cols, CV_8UC3);
+	Mat_<cv::Vec3b> img = _img;
+	Mat_<cv::Vec3b> mask = _mask;
+	Mat_<cv::Vec3b> result = res;
+
+	for(int i = 0; i < img.rows; ++i)
+		for(int j = 0; j < img.cols; ++j) {
+			if(mask(i,j) == WHITE)
+				result(i,j) = img(i,j);
+			else
+				result(i,j) = BLACK;
+		}
+
+
+
+	return result;
+}
 
 Mat templateFunction(Mat& _img) {
 	Mat res(_img.rows, _img.cols, CV_8UC3);
