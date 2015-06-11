@@ -121,6 +121,8 @@ Mat dilate(Mat& _img, int size, int iterations) {
 
 					if(white)
 						result(i, j) = WHITE;
+					else
+						result(i,j) = BLACK;
 
 
 					}
@@ -297,9 +299,68 @@ Point getCenter(Mat& _img, Vec3b color) {
 			}
 		}
 
-	Point result = Point(bottom - top, right - left);
+	Point result = Point((bottom - top)/2+top, (right - left)/2+left);
 	return result;
 }
+
+Point getBox(Mat& _img, Vec3b color) {
+
+	Mat_<cv::Vec3b> img = _img;
+
+
+	int left = img.cols-1;
+	int right = 0;
+	int top = img.rows - 1;
+	int bottom = 0;
+
+	for(int i = 0; i < img.rows; ++i)
+		for(int j = 0; j < img.cols; ++j) {
+			if(img(i,j) == color) {
+				if(i > bottom)
+					bottom = i;
+				if(i < top)
+					top = i;
+				if(j > right)
+					right = j;
+				if(j < left)
+					left = j;
+			}
+		}
+
+	Point result = Point(right - left, bottom - top);
+	return result;
+}
+
+float getDiagonal(Mat& _img, Vec3b color) {
+
+	Mat_<cv::Vec3b> img = _img;
+
+
+	int left = img.cols-1;
+	int right = 0;
+	int top = img.rows - 1;
+	int bottom = 0;
+
+	for(int i = 0; i < img.rows; ++i)
+		for(int j = 0; j < img.cols; ++j) {
+			if(img(i,j) == color) {
+				if(i > bottom)
+					bottom = i;
+				if(i < top)
+					top = i;
+				if(j > right)
+					right = j;
+				if(j < left)
+					left = j;
+			}
+		}
+
+	float width = (float)(right - left);
+	float height = (float)(bottom - top);
+	return sqrt(pow(width, 2.0) + pow(height, 2.0));
+}
+
+
 
 Mat getROI(Mat& _img, Vec3b color) {
 
@@ -431,6 +492,17 @@ double MOMENT(int p, int q, cv::Mat& _I, Vec3b color) {
 			M += (pow(i - ii,p)) * (pow(j - jj,q));
 		}
 	return M;
+}
+
+double M8(cv::Mat& _I, Vec3b color) {
+	double M30 = MOMENT(3, 0, _I, color);
+	double M12 = MOMENT(1, 2, _I, color);
+	double M21 = MOMENT(2, 1, _I, color);
+	double M03 = MOMENT(0, 3, _I, color);
+	double M00 = (double)count_S(_I, color);
+
+	return (M30 * M12 + M21 * M03 - pow(M12, 2.0) - pow(M21, 2.0)) / pow(M00, 5.0);
+
 }
 
 double M3(cv::Mat& _I, Vec3b color) {
@@ -579,22 +651,29 @@ std::vector<Element> znajdzKola(Mat& _img) {
 
 	while(!noWhite(img)) {
 
-		for(int i = 0; i < img.rows; ++i)
+		for(int i = 0; i < img.rows; ++i) {
+			if((i % 100) == 0)
+				std::cout << "KOLA: " << ((float)i) / ((float)img.rows) * 100.0 << " %" << std::endl;
 			for(int j = 0; j < img.cols; ++j) {
+
 				if(img(i,j) == WHITE) {
 
 					//std::cout<<"FLOOD " << licznik << std::endl;
+
 					floodQ(img, i, j, RED);
 					//temp = getROI(img, RED);
 					float w3 = W3(img, RED);
 					float S = count_S(img, RED);
-					//std::cout<<w3<<std::endl;
+
 					if(S > 100 && w3 < 0.03 && w3 > -0.15) {
-						ob.p = getCenter(img, RED);
-						ob.scale = S;
+						ob.center = getCenter(img, RED);
+						ob.diag = getDiagonal(img, RED);
+						ob.box = getBox(img, RED);
+						ob.scale = S / 1000.0;
 						ob.type = "KOLO";
 						obiekty.push_back(ob);
 						changeColors(img, RED, GREEN);
+						std::cout<<"KOLO: " << S<<std::endl;
 						/*znalezione++;
 						if(znalezione > 1) {
 							changeColors(img, WHITE, BLACK);
@@ -625,6 +704,7 @@ std::vector<Element> znajdzKola(Mat& _img) {
 		//if(licznik > 100) break;
 		/*if(znalezione > 0) break;*/
 
+		}
 
 
 
@@ -642,79 +722,121 @@ std::vector<Element> znajdzLiteryBiale(Mat& _img) {
 	Mat_<cv::Vec3b> result = res;
 	Mat temp;
 
+	bool P, K, O;
+
 	int licznik = 0;
 	//int znalezione = 0;
 
 	std::vector<Element> obiekty;
 
-
-
 	while(!noWhite(img)) {
 
-		for(int i = 0; i < img.rows; ++i)
+		for(int i = 0; i < img.rows; ++i) {
+			if((i % 100) == 0)
+				std::cout << "LITERY: " << ((float)i) / ((float)img.rows) * 100.0 << " %" << std::endl;
 			for(int j = 0; j < img.cols; ++j) {
-				if(img(i,j) == WHITE) {
 
+				if(img(i,j) == WHITE) {
+					P = false;
+					K = false;
+					O = false;
+					//std::cout<<"FLOOD "<< licznik << std::endl;
+
+					licznik++;
 
 					floodQ(img, i, j, RED);
 					Mat temp = getROI(img, RED);
 					float S = count_S(temp, RED);
-					if(S > 900 && S < 50000) {
+					if(S > 900 && S < 30000) {
 
-						float w3 = W3(temp, RED);
+
+						float m8 = M8(img, RED);
 						float m3 = M3(img, RED);
 						float m7 = M7(img, RED);
+
 						Element ob;
 
-
-						std::cout<<"S: "<<S<<std::endl;
-
-						std::cout<<"w3: "<<w3<<std::endl;
-						std::cout<<"m3: "<<m3<<std::endl;
-						std::cout<<"m7: "<<m7<<std::endl<<std::endl;
-
-
-						if(w3 > 0.57 && w3 < 1.0 && m3 > 0.017 && m3 < 0.039 && m7 > 0.018 && m7 < 0.025) {
-							ob.p = getCenter(img, RED);
-							ob.scale = S;
-							ob.type = "P";
-							obiekty.push_back(ob);
-							changeColors(img, RED, BLUE);
-
+						if(m3 > 0.016 && m3 < 0.039
+								&& m8 > -0.0027 && m8 < -0.0017
+								&& m7 > 0.018 && m7 < 0.025) {
+							P = true;
+							ob.scale = S / 4000.0;
 						}
-						else if(w3 > 0.12 && w3 < 1.13 && m3 > 0.0000089 && m3 < 0.000086 && m7 > 0.009 && m7 < 0.014) {
-							ob.p = getCenter(img, RED);
-							ob.scale = S;
-							ob.type = "K";
-							obiekty.push_back(ob);
-							changeColors(img, RED, MAGENTA);
-
-
+						if(m3 > 0.0000086 && m3 < 0.000089
+								&& m8 > -0.0001 && m8 < -0.0000005
+								&& m7 > 0.008 && m7 < 0.015) {
+							K = true;
+							ob.scale = S / 2000.0;
 						}
-						else if(w3 > 0.15 && w3 < 0.84 && m3 > 0.000084 && m3 < 0.00042 && m7 > 0.0091 && m7 < 0.013) {
-							ob.p = getCenter(img, RED);
-							ob.scale = S;
-							ob.type = "O";
-							obiekty.push_back(ob);
-							changeColors(img, RED, YELLOW);
-
-
-
+						if(m3 > 0.000075 && m3 < 0.00055
+								&& m8 > -0.000053 && m8 < -0.000009
+								&& m7 > 0.0081 && m7 < 0.013) {
+							O = true;
+							ob.scale = S / 2000.0;
 						}
-						else
+
+
+						if(P || O || K) {
+							ob.center = getCenter(img, RED);
+							ob.diag = getDiagonal(img, RED);
+							ob.box = getBox(img, RED);
+
+							if(P && !K && !O) {
+								ob.type = "P";
+								changeColors(img, RED, BLUE);
+								//std::cout<<"P"<<std::endl;
+							}
+							if(!P && K && !O) {
+								ob.type = "K";
+								changeColors(img, RED, MAGENTA);
+								//std::cout<<"K"<<std::endl;
+							}
+							if(!P && !K && O) {
+								ob.type = "O";
+								changeColors(img, RED, YELLOW);
+								//std::cout<<"O"<<std::endl;
+							}
+							if(!P && K && O) {
+								ob.type = "KO";
+								changeColors(img, RED, PURPLE);
+								//std::cout<<"KO"<<std::endl;
+							}
+
+							obiekty.push_back(ob);
+
+							//std::cout<<"m8: "<<m8<<std::endl;
+							//std::cout<<"m3: "<<m3<<std::endl;
+							//std::cout<<"m7: "<<m7<<std::endl<<std::endl;
+							//std::cout<<"center: " << ob.center <<std::endl;
+							//std::cout<<"S: " << ob.scale <<std::endl;
+							//std::cout<<"diag: " << ob.diag <<std::endl;
+						}
+						else {
 							changeColors(img, RED, BLACK);
+							/*std::cout<<"zLE m8: "<<m8<<std::endl;
+							std::cout<<"zLE m3: "<<m3<<std::endl;
+							std::cout<<"zLE: m7: "<<m7<<std::endl;*/
+
+						}
+
+						//std::cout<<"S: "<<S<<std::endl;
+
+						//std::cout<<"w3: "<<w3<<std::endl;
 
 
-						licznik++;
+
 						//if(licznik > 100) break;
 
 					}
 					else
 						changeColors(img, RED, BLACK);
+
 				}
+
 				//if(licznik > 100) break;
 			}
 		//if(licznik > 100) break;
+		}
 
 	}
 	//std::cout<<licznik<<std::endl;
@@ -740,6 +862,34 @@ Mat close(Mat& _img, int iterations) {
 
 		img = dilate(img, 3, iterations);
 		img = erode(img, 3, iterations);
+
+	return clone(img);
+}
+
+Mat open2(Mat& _img, int iterations) {
+
+
+	Mat_<cv::Vec3b> img = clone(_img);
+
+	for(int i = 0; i < iterations; ++i) {
+		img = erode(img, 3, iterations);
+		img = dilate(img, 3, iterations);
+	}
+
+
+	return clone(img);
+}
+
+Mat close2(Mat& _img, int iterations) {
+
+
+	Mat_<cv::Vec3b> img = clone(_img);
+
+	for(int i = 0; i < iterations; ++i) {
+		img = dilate(img, 3, iterations);
+		img = erode(img, 3, iterations);
+	}
+
 
 	return clone(img);
 }
@@ -798,6 +948,131 @@ Mat mask(Mat& _img, Mat& _mask) {
 
 
 	return result;
+}
+
+Mat removeSmall(Mat& _img, int dist) {
+	Mat res(_img.rows, _img.cols, CV_8UC3);
+	Mat_<cv::Vec3b> img = _img;
+	Mat_<cv::Vec3b> result = res;
+
+	for(int i = 0; i < img.rows; ++i)
+		for(int j = 0; j < img.cols; ++j) {
+			if(img(i,j) == WHITE) {
+				int left = j;
+				int right = j;
+				int top = i;
+				int bottom = i;
+				while(img(bottom,j) == WHITE && bottom < img.rows && !(bottom - i > dist))
+					bottom++;
+				while(img(top,j) == WHITE && top > 0 && !(i - top > dist))
+					top--;
+				while(img(i,right) == WHITE && right < img.rows && !(right - j > dist))
+					right++;
+				while(img(i,left) == WHITE && left > 0 && !(j - left > dist))
+					left--;
+
+				if((right - left) + (bottom - top) > dist)
+					result(i,j) = WHITE;
+				else
+					result(i,j) = BLACK;
+			}
+		}
+
+
+	return result;
+}
+
+Mat drawRectangle(Mat& _img, Point p, float s, float ss, Vec3b color) {
+
+	Mat_<cv::Vec3b> img = _img;
+	int size1 = (int)s;
+	int size2 = (int)ss;
+
+
+	for(int i = max(p.x - size2/2, 0); i < min(p.x + size2/2, img.rows-1); ++i) {
+		img(i,max(p.y - size1/2,0)) = color;
+		img(i,max(p.y + 1 - size1/2,1)) = color;
+		img(i,max(p.y + 2 - size1/2,2)) = color;
+
+		img(i,min(p.y + size1/2, img.cols - 1)) = color;
+		img(i,min(p.y - 1 + size1/2, img.cols - 2)) = color;
+		img(i,min(p.y - 2 + size1/2, img.cols - 3)) = color;
+	}
+
+	for(int j = max(p.y - size1/2, 0); j < min(p.y + size1/2, img.cols-1); ++j) {
+		img(max(p.x - size2/2, 0), j) = color;
+		img(max(p.x + 1 - size2/2, 1), j) = color;
+		img(max(p.x + 2 - size2/2, 2), j) = color;
+
+		img(min(p.x + size2/2, img.rows - 1), j) = color;
+		img(min(p.x - 1 + size2/2, img.rows - 2), j) = color;
+		img(min(p.x - 2 + size2/2, img.rows - 3), j) = color;
+	}
+
+
+
+	return img;
+}
+
+Mat findLogos(Mat& _img, std::vector<Element> obiekty) {
+
+	Mat_<cv::Vec3b> img = _img;
+
+	std::vector<Element> KOLA;
+	std::vector<Element> P;
+	std::vector<Element> K;
+	std::vector<Element> O;
+
+	if(obiekty.size() == 0) return img;
+
+
+	for(unsigned int i = 0; i < obiekty.size(); ++i) {
+		if(obiekty[i].type == "KOLO")
+			KOLA.push_back(obiekty[i]);
+		if(obiekty[i].type == "P")
+			P.push_back(obiekty[i]);
+		if(obiekty[i].type == "K" || obiekty[i].type == "KO")
+			K.push_back(obiekty[i]);
+		if(obiekty[i].type == "O" || obiekty[i].type == "KO")
+			O.push_back(obiekty[i]);
+	}
+
+	std::cout<<"Kola: "<<KOLA.size() << " K: " <<K.size() << " P: " << P.size() << " O: " <<O.size() << std::endl;
+
+
+	for(unsigned int i = 0; i < KOLA.size(); ++i) {
+		for(unsigned int j = 0; j < P.size(); ++j) {
+			if(P[j].scale < 0.57 * KOLA[i].scale || P[j].scale > 1.76 * KOLA[i].scale
+					|| abs(P[j].center.x - KOLA[i].center.x) > P[j].diag)
+				continue;
+			for(unsigned int k = 0; k < K.size(); ++k) {
+				if(K[k].scale < 0.57 * KOLA[i].scale || K[k].scale > 1.76 * KOLA[i].scale
+						|| K[k].scale < 0.57 * P[j].scale || K[k].scale > 1.76 * P[j].scale
+						|| abs(K[k].center.x - KOLA[i].center.x) > P[j].diag)
+					continue;
+				for(unsigned int l = 0; l < O.size(); ++l) {
+					if(O[l].scale < 0.57 * KOLA[i].scale || O[l].scale > 1.76 * KOLA[i].scale
+							|| O[l].scale < 0.57 * P[j].scale || O[l].scale > 1.76 * P[j].scale
+							|| O[l].scale < 0.57 * K[k].scale || O[l].scale > 1.76 * K[k].scale
+							|| abs(O[l].center.x - KOLA[i].center.x) > P[j].diag)
+						continue;
+					else {
+						drawRectangle(img, KOLA[i].center, KOLA[i].box.x, KOLA[i].box.y, GREEN);
+						drawRectangle(img, P[j].center, P[j].box.x, P[j].box.y, BLUE);
+						drawRectangle(img, K[k].center, K[k].box.x, K[k].box.y, MAGENTA);
+						drawRectangle(img, O[l].center, O[l].box.x, O[l].box.y, YELLOW);
+						//drawRectangle(img, Point(139,135), 10);
+						//std::cout<<"JEST!\n" << KOLA[i].diag/2;
+					}
+
+				}
+			}
+		}
+	}
+
+
+
+	return img;
 }
 
 Mat templateFunction(Mat& _img) {

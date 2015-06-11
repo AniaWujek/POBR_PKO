@@ -13,11 +13,14 @@
 
 class Element {
 public:
-	Point p;
+	Point center;
+	Point box;
+	float diag;
 	float scale;
 	std::string type;
 	Element(){
 		scale = 1.0;
+		diag = 0.0;
 	};
 	virtual ~Element(){};
 };
