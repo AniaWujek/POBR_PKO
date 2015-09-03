@@ -664,8 +664,9 @@ std::vector<Element> znajdzKola(Mat& _img) {
 					//temp = getROI(img, RED);
 					float w3 = W3(img, RED);
 					float S = count_S(img, RED);
+					//std::cout<<w3<<std::endl;
 
-					if(S > 100 && w3 < 0.03 && w3 > -0.15) {
+					if(S > 100 && w3 < 0.047 && w3 > -0.15) {
 						ob.center = getCenter(img, RED);
 						ob.diag = getDiagonal(img, RED);
 						ob.box = getBox(img, RED);
@@ -673,7 +674,7 @@ std::vector<Element> znajdzKola(Mat& _img) {
 						ob.type = "KOLO";
 						obiekty.push_back(ob);
 						changeColors(img, RED, GREEN);
-						std::cout<<"KOLO: " << S<<std::endl;
+						//std::cout<<"KOLO: " << S<<std::endl;
 						/*znalezione++;
 						if(znalezione > 1) {
 							changeColors(img, WHITE, BLACK);
@@ -756,21 +757,21 @@ std::vector<Element> znajdzLiteryBiale(Mat& _img) {
 
 						Element ob;
 
-						if(m3 > 0.016 && m3 < 0.039
+						if(m3 > 0.01 && m3 < 0.05
 								&& m8 > -0.0027 && m8 < -0.0017
 								&& m7 > 0.018 && m7 < 0.025) {
 							P = true;
 							ob.scale = S / 4000.0;
 						}
-						if(m3 > 0.0000086 && m3 < 0.000089
-								&& m8 > -0.0001 && m8 < -0.0000005
+						if(m3 > 0.000007 && m3 < 0.000089
+								&& m8 > -0.0001 && m8 < -0.0000004
 								&& m7 > 0.008 && m7 < 0.015) {
 							K = true;
 							ob.scale = S / 2000.0;
 						}
-						if(m3 > 0.000075 && m3 < 0.00055
-								&& m8 > -0.000053 && m8 < -0.000009
-								&& m7 > 0.0081 && m7 < 0.013) {
+						if(m3 > 0.000061 && m3 < 0.00055
+								&& m8 > -0.000053 && m8 < -0.000007
+								&& m7 > 0.008 && m7 < 0.013) {
 							O = true;
 							ob.scale = S / 2000.0;
 						}
@@ -804,10 +805,10 @@ std::vector<Element> znajdzLiteryBiale(Mat& _img) {
 
 							obiekty.push_back(ob);
 
-							//std::cout<<"m8: "<<m8<<std::endl;
-							//std::cout<<"m3: "<<m3<<std::endl;
-							//std::cout<<"m7: "<<m7<<std::endl<<std::endl;
-							//std::cout<<"center: " << ob.center <<std::endl;
+							/*std::cout<<"m8: "<<m8<<std::endl;
+							std::cout<<"m3: "<<m3<<std::endl;
+							std::cout<<"m7: "<<m7<<std::endl;*/
+							/*std::cout<<"center: " << ob.center <<std::endl<<std::endl;*/
 							//std::cout<<"S: " << ob.scale <<std::endl;
 							//std::cout<<"diag: " << ob.diag <<std::endl;
 						}
@@ -1043,18 +1044,21 @@ Mat findLogos(Mat& _img, std::vector<Element> obiekty) {
 	for(unsigned int i = 0; i < KOLA.size(); ++i) {
 		for(unsigned int j = 0; j < P.size(); ++j) {
 			if(P[j].scale < 0.57 * KOLA[i].scale || P[j].scale > 1.76 * KOLA[i].scale
-					|| abs(P[j].center.x - KOLA[i].center.x) > P[j].diag)
+					|| abs(P[j].center.x - KOLA[i].center.x) > P[j].diag
+					|| abs(P[j].center.y - KOLA[i].center.y) > P[j].diag)
 				continue;
 			for(unsigned int k = 0; k < K.size(); ++k) {
 				if(K[k].scale < 0.57 * KOLA[i].scale || K[k].scale > 1.76 * KOLA[i].scale
 						|| K[k].scale < 0.57 * P[j].scale || K[k].scale > 1.76 * P[j].scale
-						|| abs(K[k].center.x - KOLA[i].center.x) > P[j].diag)
+						|| abs(K[k].center.x - KOLA[i].center.x) > P[j].diag
+						|| abs(K[k].center.y - KOLA[i].center.y) > P[j].diag)
 					continue;
 				for(unsigned int l = 0; l < O.size(); ++l) {
 					if(O[l].scale < 0.57 * KOLA[i].scale || O[l].scale > 1.76 * KOLA[i].scale
 							|| O[l].scale < 0.57 * P[j].scale || O[l].scale > 1.76 * P[j].scale
 							|| O[l].scale < 0.57 * K[k].scale || O[l].scale > 1.76 * K[k].scale
-							|| abs(O[l].center.x - KOLA[i].center.x) > P[j].diag)
+							|| abs(O[l].center.x - KOLA[i].center.x) > P[j].diag
+							|| abs(O[l].center.y - KOLA[i].center.y) > P[j].diag)
 						continue;
 					else {
 						drawRectangle(img, KOLA[i].center, KOLA[i].box.x, KOLA[i].box.y, GREEN);

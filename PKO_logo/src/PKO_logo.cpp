@@ -15,7 +15,7 @@ int main( int argc, char** argv )
 {
   Mat image;
 
-  image = imread( "images/testy/3.jpg" );
+  image = imread( "images/testy/4.jpg" );
 
 
     if( !image.data )
@@ -48,7 +48,7 @@ int main( int argc, char** argv )
     Mat hsv2 = BGR2HSV(contrast);
     Mat filt2 = filterHsv(hsv2, 80,135, 0,0,0,75, 70,255);
     Mat and_white = AND_image(filt2, white);
-    Mat small2 = removeSmall(and_white, 25);
+    Mat small2 = removeSmall(and_white, 18);
     Mat op2 = erode(small2, 3, 2);
     Mat cl2 = dilate(op2, 3, 1);
     Mat cll2 = clone(cl2);
@@ -59,10 +59,9 @@ int main( int argc, char** argv )
     std::cout<<"NIEBIESKIE" << std::endl;
     Mat notWhite = NOT_image(and_white);
     Mat image2 = mask(image, notWhite);
-    Mat blue = findColorRel(image2, 15, 0);
     Mat hsv3 = BGR2HSV(image2);
     Mat filt3 = filterHsv(hsv3, 95,130, 0,0,30,255, 1,170);
-    Mat small3 = removeSmall(filt3, 25);
+    Mat small3 = removeSmall(filt3, 18);
     Mat op3 = open(small3, 1);
     Mat cl3 = close(op3, 1);
     Mat cll3 = clone(cl3);
@@ -89,21 +88,30 @@ int main( int argc, char** argv )
 
 
 
-  //show(opencvHsv, "opencvHsv");
-  //show(cll3, "cll3");
-  show(finalfinal, "finalfinal");
-  show(image, "image");
-  //show(cll3, "cll3");
-  //show(small, "small");
-  //show(finalfinal, "finalfinal");
+  show(image, "oryginalny obraz");
+  show(red, "red");
+  show(filt, "hsv red");
+  show(and_red, "and red");
+  show(cll, "poprawione red");
+  show(cl, "znalezione kola");
+
+  show(contrast, "contrast");
+  show(white, "white");
+  show(filt2, "hsv white");
+  show(and_white, "and white");
+  show(cll2, "poprawione white");
+  show(cl2, "znalezione biale litery");
+
+  show(notWhite, "notWhite");
+  show(white, "white");
+  show(filt3, "hsv blue");
+  show(cll3, "poprawione blue");
+  show(cl3, "znalezione niebieskie litery");
 
 
+  show(finalfinal, "obiekty znalezione");
 
-
-
-
-
-  waitKey(0);
+  while(waitKey(0) != 'q');
 
   return 0;
 }

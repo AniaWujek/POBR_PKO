@@ -213,6 +213,11 @@ Mat filterHsv(Mat& _img, int hlow1, int hhigh1, int hlow2, int hhigh2, int slow,
 
 	for(int i = 0; i < img.rows; ++i)
 		for(int j = 0; j < img.cols; ++j) {
+			result(i,j) = BLACK;
+		}
+
+	for(int i = 0; i < img.rows; ++i)
+		for(int j = 0; j < img.cols; ++j) {
 
 			if(((img(i,j)[0] >= hlow1 && img(i,j)[0] <= hhigh1) ||  (img(i,j)[0] >= hlow2 && img(i,j)[0] <= hhigh2)) &&
 						img(i,j)[1] >= slow && img(i,j)[2] >= vlow && img(i,j)[1] <= shigh && img(i,j)[2] <= vhigh)
